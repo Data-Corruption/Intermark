@@ -1,0 +1,14 @@
+
+bin/
+logs/
+.vscode/
+docs/ignored/
+node_modules/
+
+data/css/output.css
+data/content/
+data/assets/
+data/data.db
+data/html/
+
+config.json

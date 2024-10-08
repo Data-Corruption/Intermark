@@ -1,0 +1,76 @@
+{{define "sidebar_item"}}
+{{if eq .Type "divider"}}
+<div class="divider"></div>
+{{else}}
+<li data-type="{{.Type}}" data-id="{{.Meta.ID}}">
+  {{if eq .Type "folder"}}
+  <details>
+    <summary class="py-2 text-wrap">{{.Name}}</summary>
+    <ul class="folderContent">
+      {{range .Contents}}
+      {{ template "sidebar_item" . }}
+      {{end}}
+    </ul>
+  </details>
+  {{else}}
+  <a class="p-2 text-wrap" onclick="openPage(this)">{{.Name}}</a>
+  {{end}}
+</li>
+{{end}}
+{{end}}
+
+<!doctype html>
+<html lang="en">
+{{template "header" .}}
+
+<body>
+  <script>
+    function openPage(element) {
+      const pageID = element.closest('[data-id]').dataset.id;
+      window.location.search = `id=${pageID}`;
+    }
+  </script>
+  {{template "navbar" .}}
+  <div class="drawer lg:drawer-open">
+    <input id="drawer-sidebar" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content m-4">
+      <article class="prose max-w-none">
+        {{ .Content }}
+      </article>
+    </div>
+    <div class="drawer-side">
+      <label for="drawer-sidebar" class="drawer-overlay"></label>
+      <ul class="menu bg-base-200 text-base-content min-h-full w-96 p-4">
+        <!-- Sidebar -->
+        <ul id="sidebar">
+          {{range .Layout.Sidebar}}
+          {{ template "sidebar_item" . }}
+          {{end}}
+        </ul>
+        <div class="divider"></div>
+        {{template "socials"}}
+      </ul>
+    </div>
+  </div>
+  <script>
+    function expandSidebar(pageID) {
+      if (pageID) {
+        const pageSidebarElement = document.querySelector(`[data-id="${pageID}"]`);
+        if (!pageSidebarElement) { return; }
+        pageSidebarElement.classList.add('text-primary');
+        document.querySelectorAll('[data-type="folder"]').forEach(folder => {
+          if (folder.contains(pageSidebarElement)) {
+            folder.querySelector('details').setAttribute('open', '');
+          }
+        });
+      }
+    }
+    // expand sidebar to show page on load
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageID = urlParams.get('id');
+    if (pageID) { expandSidebar(pageID); }
+  </script>
+  {{template "footer" .}}
+</body>
+
+</html>

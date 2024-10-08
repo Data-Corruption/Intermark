@@ -1,0 +1,605 @@
+{{define "edit_sidebar_item"}}
+{{if eq .Type "folder"}}
+{{ template "edit_sidebar_folder" . }}
+{{else if eq .Type "file"}}
+{{ template "edit_sidebar_file" . }}
+{{else if eq .Type "divider"}}
+{{ template "edit_sidebar_divider" . }}
+{{end}}
+{{end}}
+
+{{define "edit_sidebar_folder"}}
+<li draggable="true" data-type="folder" data-name="{{.Name}}">
+  <details>
+    <summary class="py-2 text-wrap folder-link">
+      <span class="item-name">{{.Name}}</span>
+      <div class="dropdown dropdown-left ml-auto">
+        <button tabindex="0" class="btn btn-xs m-1">···</button>
+        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+          <li><a onclick="addSidebarItem(this, 'folder')">Add Group</a></li>
+          <li><a onclick="addSidebarItem(this, 'file')">Add Page</a></li>
+          <li><a onclick="addSidebarItem(this, 'divider')">Add Divider</a></li>
+          <li><a onclick="renameItem(this)">Rename</a></li>
+          <li><a onclick="deleteItem(this)">Delete</a></li>
+        </ul>
+      </div>
+    </summary>
+    <ul class="folderContent">
+      {{range .Contents}}
+      {{ template "edit_sidebar_item" . }}
+      {{end}}
+    </ul>
+  </details>
+</li>
+{{end}}
+
+{{define "edit_sidebar_file"}}
+<li draggable="true" data-type="file" data-name="{{.Name}}" data-id="{{.Meta.ID}}">
+  <div class="flex flex-row p-0 tooltip" data-tip="{{.Meta.RelPath}} {{.Meta.ID}} {{.Meta.Commit}}">
+    <a class="flex-grow p-2 text-wrap item-name text-left">{{.Name}}</a>
+    <div class="dropdown dropdown-left ml-auto">
+      <button tabindex="0" class="btn btn-xs m-1">···</button>
+      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+        <li><a onclick="setContent(this)">Set Content</a></li>
+        <li><a onclick="renameItem(this)">Rename</a></li>
+        <li><a onclick="deleteItem(this)">Delete</a></li>
+      </ul>
+    </div>
+  </div>
+</li>
+{{end}}
+
+{{define "edit_sidebar_divider"}}
+<div draggable="true" data-type="divider">
+  <div class="flex flex-row items-center space-x-4">
+    <div class="divider grow"></div>
+    <button class="btn btn-sm btn-square" onclick="deleteItem(this)">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+</div>
+{{end}}
+
+{{define "edit_footer_item"}}
+{{if eq .Type "footer-text"}}
+{{ template "edit_footer_text" . }}
+{{else if eq .Type "footer-file"}}
+{{ template "edit_footer_file" . }}
+{{else if eq .Type "footer-link"}}
+{{ template "edit_footer_link" . }}
+{{end}}
+{{end}}
+
+{{define "edit_footer_text"}}
+<li draggable="true" data-type="footer-text" data-name="{{.Name}}">
+  <div class="flex flex-row p-0">
+    <a class="flex-grow p-2 text-wrap item-name text-left">{{.Name}}</a>
+    <div class="dropdown dropdown-left ml-auto">
+      <button tabindex="0" class="btn btn-xs m-1">···</button>
+      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+        <li><a onclick="renameItem(this)">Edit</a></li>
+        <li><a onclick="deleteItem(this)">Delete</a></li>
+      </ul>
+    </div>
+  </div>
+</li>
+{{end}}
+
+{{define "edit_footer_file"}}
+<li draggable="true" data-type="footer-file" data-name="{{.Name}}" data-id="{{.Meta.ID}}">
+  <div class="flex flex-row p-0 tooltip" data-tip="{{.Meta.RelPath}} {{.Meta.ID}} {{.Meta.Commit}}">
+    <a class="flex-grow p-2 text-wrap item-name text-left">{{.Name}}</a>
+    <div class="dropdown dropdown-left ml-auto">
+      <button tabindex="0" class="btn btn-xs m-1">···</button>
+      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+        <li><a onclick="setContent(this)">Set Content</a></li>
+        <li><a onclick="renameItem(this)">Rename</a></li>
+        <li><a onclick="deleteItem(this)">Delete</a></li>
+      </ul>
+    </div>
+  </div>
+</li>
+{{end}}
+
+{{define "edit_footer_link"}}
+<li draggable="true" data-type="footer-link" data-name="{{.Name}}" data-link="{{.Link}}">
+  <div class="flex flex-row p-0 tooltip" data-tip="{{.Link}}">
+    <a class="flex-grow p-2 text-wrap item-name text-left">{{.Name}}</a>
+    <div class="dropdown dropdown-left ml-auto">
+      <button tabindex="0" class="btn btn-xs m-1">···</button>
+      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+        <li><a onclick="renameItem(this)">Edit</a></li>
+        <li><a onclick="editLink(this)">Edit Link</a></li>
+        <li><a onclick="deleteItem(this)">Delete</a></li>
+      </ul>
+    </div>
+  </div>
+</li>
+{{end}}
+
+<!doctype html>
+<html lang="en">
+{{template "header" .}}
+
+<!-- this nonsense is to get around the html linter not knowing template syntax -->
+<script type="application/json" id="pmd">{{.PageMetaDataJSON}}</script>
+
+<script>
+  const SessionToken = '{{.Token}}';
+  const pmdScript = document.getElementById('pmd');
+  var PageMetaData = JSON.parse(pmdScript.textContent);
+  var SetContentTarget = null;
+
+  function reloadCSS() {
+    const links = document.querySelectorAll('link[rel="stylesheet"]');
+    links.forEach(link => {
+      const href = link.getAttribute('href');
+      const newHref = href.split('?')[0] + '?v=' + new Date().getTime();
+      link.setAttribute('href', newHref);
+    });
+  }
+
+  function getUnusedIDs() {
+    return PageMetaData.filter(meta => {
+      return !(document.querySelector(`[data-id="${meta.ID}"]`));
+    });
+  }
+
+  function setContent(element) {
+    SetContentTarget = element.closest('[data-id]');
+    const page_select = document.getElementById('page-select');
+    // clear existing options
+    while (page_select.firstChild) { page_select.removeChild(page_select.firstChild); }
+    // add none option
+    const none_option = document.createElement('option');
+    none_option.value = 'none';
+    none_option.textContent = 'None';
+    page_select.appendChild(none_option);
+    // add unused PageMetaDatas
+    getUnusedIDs().forEach(meta => {
+      const option = document.createElement('option');
+      option.value = meta.ID;
+      option.textContent = `${meta.RelPath} ${meta.ID} ${meta.Commit}`;
+      page_select.appendChild(option);
+    });
+    page_select_modal.showModal();
+  }
+
+  function setFileItemContent(element, id) {
+    const meta = (id === 'none') ? { RelPath: '', ID: '', Commit: '' } : PageMetaData.find(meta => meta.ID === id);
+    const tipElement = element.querySelector(':scope > .tooltip') || element;
+    element.dataset.id = id;
+    tipElement.dataset.tip = `${meta.RelPath} ${meta.ID} ${meta.Commit}`;
+  }
+
+  function confirmSetContent() {
+    page_select_modal.close();
+    setFileItemContent(SetContentTarget, document.getElementById('page-select').value);
+    SetContentTarget = null;
+  }
+
+  class FetchError extends Error {
+    constructor(message, status, response) {
+      super(message);
+      this.name = 'FetchError';
+      this.status = status;
+      this.response = response;
+    }
+  }
+
+  function displayAlertMessage(message) {
+    document.getElementById('alert-model-message').textContent = message;
+    alert_modal.showModal();
+  }
+
+  async function executeWithClickBlocking(operation) {
+    document.getElementById('click-blocker').classList.remove('hidden');
+    try {
+      const result = await operation();
+      return result;
+    } catch (error) {
+      console.error('Operation failed:', error);
+      displayAlertMessage('An error occurred: ' + error.message + ', ' + error.response);
+      throw error;
+    } finally {
+      document.getElementById('click-blocker').classList.add('hidden');
+    }
+  }
+
+  async function fetchWithTimeout(url, options = {}, timeout = 5000) {
+    // abort mechanism
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeout);
+    // fetch with timeout
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal,
+      });
+      const responseText = await response.text();
+      if (!response.ok) {
+        throw new FetchError(`HTTP error! Status: ${response.status}`, response.status, responseText);
+      }
+      return responseText;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async function jsonReq(route, method = 'GET', data = {}, timeout = 5000) {
+    const options = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ token: SessionToken, data }),
+    };
+    if (method.toUpperCase() === 'GET') {
+      delete options.body;
+    }
+    return await fetchWithTimeout(route, options, timeout);
+  }
+
+  async function updateSandbox() {
+    await executeWithClickBlocking(async () => {
+      const sandboxHTML = await jsonReq('/edit/update-sandbox', 'POST', { sandbox_md: document.getElementById('sbMD').value });
+      document.getElementById('sbHTML').innerHTML = sandboxHTML;
+      reloadCSS();
+    });
+  }
+
+  async function addSidebarItem(element, newItemType) {
+    await executeWithClickBlocking(async () => {
+      const responseText = await jsonReq('/edit/new-sidebar-item', 'POST', { type: newItemType });
+      const contents = element.closest('[data-type="folder"]') || document.getElementById('sidebar');
+      const targetElement = contents.tagName === 'UL' ? contents : contents.querySelector('details > ul.folderContent');
+      targetElement.insertAdjacentHTML('beforeend', responseText);
+    });
+  }
+
+  async function addFooterItem(element, newItemType) {
+    await executeWithClickBlocking(async () => {
+      const responseText = await jsonReq('/edit/new-footer-item', 'POST', { type: newItemType });
+      element.insertAdjacentHTML('beforeend', responseText);
+    });
+  }
+
+  async function updateContent() {
+    await executeWithClickBlocking(async () => {
+      const responseText = await jsonReq('/edit/update-content', 'POST', null, '{{.UpdateTimeout }}');
+      PageMetaData = JSON.parse(responseText);
+      let alertMsg = '';
+
+      // update all file items. Also compile list of ids in use but no longer in PageMetaData then alert the user.
+      document.querySelectorAll('[data-id]').forEach(element => {
+        if (element.dataset.id === '') return;
+        const id = element.dataset.id;
+        if (PageMetaData.find(meta => meta.ID === id)) {
+          setFileItemContent(element, id);
+        } else {
+          const tipElement = element.querySelector(':scope > .tooltip') || element;
+          const [relPath, id, commit] = tipElement.dataset.tip.split(' ');
+          alertMsg += `${relPath} ${id} ${commit}\n`;
+        }
+      });
+
+      if (alertMsg) {
+        alertMsg = 'WARNING - The following items are used in the layout but no longer exist in the content repo:\n' + alertMsg;
+        displayAlertMessage(alertMsg);
+      }
+
+    });
+  }
+
+  async function exitSession() {
+    await executeWithClickBlocking(async () => {
+      const responseText = await jsonReq('/edit/exit', 'POST');
+      window.location.href = '/';
+    });
+  }
+
+  async function saveLayout() {
+
+    const sidebarItemsToJson = (items) => {
+      const children = Array.from(items.children).filter(child =>
+        child.hasAttribute('data-type')
+      );
+      console.log('children:', children);
+      const contents = children.map(item => {
+        let sidebarItem = { Name: item.dataset.name, Type: item.dataset.type, Meta: null, Contents: null };
+        const tip = item.querySelector(':scope > .tooltip').dataset.tip;
+        if (tip) {
+          const [relPath, id, commit] = tip.split(' ');
+          sidebarItem.Meta = { ID: id, Commit: commit, RelPath: relPath };
+        }
+        const contentsElement = item.querySelector(':scope > .folderContent');
+        if (contentsElement) {
+          sidebarItem.Contents = sidebarItemsToJson(contentsElement);
+        }
+        return sidebarItem;
+      });
+      return contents;
+    };
+
+    await executeWithClickBlocking(async () => {
+      // create footer array
+      const footer = [];
+      const footerItems = Array.from(document.getElementById('f-items').children);
+      footerItems.forEach(item => {
+        let footerItem = { Name: item.dataset.name, Type: item.dataset.type, Meta: null, Link: null };
+        if (item.dataset.type === 'footer-file') {
+          const tip = item.querySelector(':scope > .tooltip').dataset.tip;
+          if (tip) {
+            const [relPath, id, commit] = tip.split(' ');
+            footerItem.Meta = { ID: id, Commit: commit, RelPath: relPath };
+          }
+        } else if (item.dataset.type === 'footer-link') {
+          footerItem.Link = item.dataset.link;
+        }
+        footer.push(footerItem);
+      });
+      // create sidebar array
+      const sidebar = sidebarItemsToJson(document.getElementById('sidebar'));
+      // create landing object
+      const landingBtn = document.getElementById('landing-btn');
+      var landing = {};
+      if (landingBtn.dataset.id) {
+        const [relPath, id, commit] = landingBtn.dataset.tip.split(' ');
+        landing = { ID: id, Commit: commit, RelPath: relPath };
+      }
+      // send data to server
+      const responseText = await jsonReq('/edit/save', 'POST', { layout: { Sidebar: sidebar, Footer: footer, Landing: landing } });
+    });
+  }
+
+  function renameItem(element) {
+    const item = element.closest('[data-name]');
+    const name = item.querySelector(':scope > .tooltip > .item-name')
+      || item.querySelector(':scope > details > summary > .item-name')
+      || item.querySelector(':scope > div > .item-name');
+    const newName = prompt('Enter new name:', item.dataset.name);
+    if (newName) {
+      item.dataset.name = newName;
+      name.textContent = newName;
+    }
+  }
+
+  async function deleteItem(element) {
+    const item = element.closest('[data-type]');
+    if (item.dataset.type !== 'divider') {
+      if (!confirm('Are you sure you want to delete ' + item.dataset.name + '?')) {
+        return;
+      }
+    }
+    item.remove();
+  }
+
+  async function editLink(element) {
+    const item = element.closest('[data-type="footer-link"]');
+    const tooltip = item.querySelector(':scope > .tooltip');
+    const link = prompt('Enter new link:', item.dataset.link);
+    if (link) {
+      item.dataset.link = link;
+      tooltip.dataset.tip = link;
+    }
+  }
+
+  // Drag and Drop System
+
+  let dragged = null;
+
+  function clearDropClasses() {
+    document.querySelectorAll('[data-type]').forEach(item => {
+      item.classList.remove('border-t-4', 'border-b-4', 'bg-primary', 'border-primary');
+    });
+  };
+
+  document.addEventListener('dragstart', function (event) {
+    event.stopPropagation();
+    let target = event.target.closest('[draggable]');
+    console.log('dragstart:', target);
+    if (target) {
+      dragged = target;
+      event.dataTransfer.setData('text/plain', null); // for browser compatibility
+    }
+  });
+
+  const typeToCategory = {
+    'file': 'sidebar',
+    'folder': 'sidebar',
+    'divider': 'sidebar',
+    'footer-text': 'footer',
+    'footer-file': 'footer',
+    'footer-link': 'footer'
+  };
+
+  document.addEventListener('dragover', function (event) {
+    if (!dragged) { return; }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const targetItem = event.target.closest('[data-type]');
+    if (!targetItem || dragged.contains(targetItem)) return;
+    if (!document.getElementById('sidebar').contains(targetItem) && !document.getElementById('f-items').contains(targetItem)) return;
+
+    // vars for above, below, into checks
+    const targetRect = (targetItem.dataset.type === 'folder') ? targetItem.querySelector('summary') : targetItem;
+    const rect = targetRect.getBoundingClientRect();
+    const thirdHeight = rect.height / 3;
+    const halfHeight = rect.height / 2;
+    const yPos = event.clientY;
+
+    // action is one of 'drop-above', 'drop-below', 'drop-into'
+    const applyAction = (targetItem, action) => {
+      clearDropClasses();
+      switch (action) {
+        case 'drop-above': targetItem.classList.add('border-t-4', 'border-primary'); break;
+        case 'drop-below': targetItem.classList.add('border-b-4', 'border-primary'); break;
+        case 'drop-into': targetItem.classList.add('bg-primary'); break;
+        default: break;
+      }
+      targetItem.dataset.dropAction = action;
+    };
+
+    const halfCheck = () => {
+      if (yPos < rect.top + halfHeight) {
+        applyAction(targetItem, 'drop-above');
+      } else if (yPos > rect.bottom - halfHeight) {
+        applyAction(targetItem, 'drop-below');
+      }
+    }
+
+    const thirdCheck = () => {
+      if (yPos < rect.top + thirdHeight) {
+        applyAction(targetItem, 'drop-above');
+      } else if (yPos > rect.bottom - thirdHeight) {
+        applyAction(targetItem, 'drop-below');
+      } else {
+        applyAction(targetItem, 'drop-into');
+      }
+    }
+
+    const draggedCategory = typeToCategory[dragged.dataset.type];
+    const targetCategory = typeToCategory[targetItem.dataset.type];
+
+    if ((draggedCategory !== targetCategory) || !draggedCategory) {
+      console.log('invalid drop:', dragged.dataset.type + '-to-' + targetItem.dataset.type);
+      return;
+    }
+
+    switch (dragged.dataset.type + '-to-' + targetItem.dataset.type) {
+      case 'folder-to-folder': thirdCheck(); break;
+      case 'file-to-folder': thirdCheck(); break;
+      default: halfCheck(); break;
+    }
+  });
+
+  document.addEventListener('drop', function (event) {
+    if (!dragged) { return; }
+    event.preventDefault();
+    clearDropClasses();
+
+    const targetItem = event.target.closest('[data-type]');
+    if (!targetItem || dragged.contains(targetItem)) return;
+    if (!document.getElementById('sidebar').contains(targetItem) && !document.getElementById('f-items').contains(targetItem)) return;
+
+    let action = targetItem.dataset.dropAction;
+    if (!action) return;
+    switch (action) {
+      case 'drop-above': targetItem.parentNode.insertBefore(dragged, targetItem); break;
+      case 'drop-below': targetItem.parentNode.insertBefore(dragged, targetItem.nextSibling); break;
+      case 'drop-into': targetItem.querySelector('.folderContent').appendChild(dragged); break;
+    }
+    dragged = null;
+  });
+
+</script>
+
+<body>
+
+  <div id="click-blocker" class="fixed top-0 left-0 w-full h-full cursor-progress z-[1000] hidden"></div>
+
+  <dialog id="alert_modal" class="modal">
+    <div class="modal-box">
+      <div class="flex flex-col justify-center space-x-4 mb-4">
+        <p id="alert-model-message"></p>
+        <button class="btn btn-sm" onclick="alert_modal.close()">Ok</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="page_select_modal" class="modal">
+    <div class="modal-box">
+      <div class="flex flex-row justify-center space-x-4 mb-4">
+        <h1 class="text-2xl font-bold">Set Content</h1>
+        <button class="btn btn-sm btn-primary" onclick="confirmSetContent()">Confirm</button>
+        <button class="btn btn-sm" onclick="page_select_modal.close()">Cancel</button>
+      </div>
+      <select id="page-select" class="select select-bordered w-full max-w-lg">
+      </select>
+    </div>
+  </dialog>
+
+  {{ template "navbar" .}}
+
+  <div class="drawer lg:drawer-open">
+    <input id="drawer-sidebar" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content p-4">
+
+      <div tabindex="0" class="collapse collapse-arrow border-base-300 bg-base-200 border w-full">
+        <input type="checkbox" />
+        <div class="collapse-title text-2xl font-bold">Sandbox</div>
+        <div class="collapse-content">
+          <button class="btn btn-sm btn-primary mb-2" onclick="updateSandbox()">Update</button>
+          <div class="flex flex-col xl:flex-row h-[75dvh]">
+            <textarea id="sbMD" class="flex-1 textarea border rounded border-slate-700 w-full h-full overflow-y-auto xl:mr-2"
+              placeholder="">{{.SandboxMD}}</textarea>
+            <article id="sbHTML" class="flex-1 prose max-w-none border rounded border-slate-700 h-full overflow-y-auto mt-2 xl:mt-0 p-2">{{.SandboxHTML}}</article>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="drawer-side">
+      <label for="drawer-sidebar" class="drawer-overlay"></label>
+      <ul class="menu bg-base-200 text-base-content min-h-full w-96 p-4">
+        <!-- Page Manager -->
+
+        <h1 class="text-2xl font-bold">Layout Manager</h1>
+
+        <div class="w-full my-4 flex flex-row space-x-4">
+          <button class="flex-1 btn btn-sm btn-primary" onclick="updateContent()">Update Content</button>
+          <button class="flex-1 btn btn-sm btn-primary" onclick="saveLayout()">Save</button>
+        </div>
+
+        <button id="landing-btn" class="w-full mb-4 btn btn-sm bg-base-300 hover:bg-base-200 tooltip"
+          data-id="{{.Layout.Landing.ID}}"
+          data-tip="{{.Layout.Landing.RelPath}} {{.Layout.Landing.ID}} {{.Layout.Landing.Commit}}"
+          onclick="setContent(this)">Set Landing Content</button>
+
+        <div class="divider">Sidebar</div>
+
+        <div class="join w-full my-4">
+          <button class="join-item grow btn btn-sm bg-base-300 hover:bg-base-200"
+            onclick="addSidebarItem(document.getElementById('sidebar'), 'folder')">+ Group</button>
+          <button id="newFileBtn" class="join-item grow btn btn-sm bg-base-300 hover:bg-base-200"
+            onclick="addSidebarItem(document.getElementById('sidebar'), 'file')">+ Page</button>
+          <button id="newDividerBtn" class="join-item grow btn btn-sm bg-base-300 hover:bg-base-200"
+            onclick="addSidebarItem(document.getElementById('sidebar'), 'divider')">+ Divider</button>
+        </div>
+
+        <ul id="sidebar" class="mt-4">
+          {{range .Layout.Sidebar}}
+          {{ template "edit_sidebar_item" . }}
+          {{end}}
+        </ul>
+
+        <div class="divider">Footer</div>
+
+        <div class="join w-full my-4">
+          <button class="join-item grow btn btn-sm bg-base-300 hover:bg-base-200"
+            onclick="addFooterItem(document.getElementById('f-items'), 'footer-text')">+ Text</button>
+          <button class="join-item grow btn btn-sm bg-base-300 hover:bg-base-200"
+            onclick="addFooterItem(document.getElementById('f-items'), 'footer-file')">+ Page</button>
+          <button class="join-item grow btn btn-sm bg-base-300 hover:bg-base-200"
+            onclick="addFooterItem(document.getElementById('f-items'), 'footer-link')">+ Link</button>
+        </div>
+
+        <ul id="f-items" class="mt-4">
+          {{range .Layout.Footer}}
+          {{ template "edit_footer_item" . }}
+          {{end}}
+        </ul>
+
+      </ul>
+    </div>
+  </div>
+
+  {{template "footer" . }}
+
+</body>
+
+</html>

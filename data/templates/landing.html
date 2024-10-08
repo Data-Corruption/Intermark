@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+{{template "header" .}}
+
+<body>
+  <div class="flex flex-col min-h-screen">
+    {{template "navbar" .}}
+    <div class="self-center flex-grow w-full max-w-2xl">
+      <article class="prose p-4 w-full">
+        {{ .Content }}
+      </article>
+    </div>
+    {{template "footer" .}}
+  </div>
+</body>
+
+</html>

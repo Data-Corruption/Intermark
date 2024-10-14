@@ -572,6 +572,11 @@ func updateAssets(commit string) error {
 	AssetsMutex.Lock()
 	defer AssetsMutex.Unlock()
 
+	// ensure the data/assets directory exists
+	if err := files.EnsureDirs(filepath.Join("./data", "assets")); err != nil {
+		return err
+	}
+
 	var assets []AssetModel
 	if err := DB.Find(&assets).Error; err != nil {
 		return err

@@ -20,7 +20,7 @@ Ensure you have the following installed:
 
 ## Installation
 
-1. **Clone The Repository**: `git clone https://github.com/Data-Corruption/intermark.git`
+1. **Clone The Repository**: `git clone https://github.com/Data-Corruption/intermark.git` or use the template.
 2. **Enter The Project Root**: `cd intermark`
 3. **Install Dependencies**: `npm install`
 4. **Build the Project**: `./build.sh`
@@ -59,9 +59,9 @@ Ensure you have the following installed:
    cat ~/.ssh/id_ed25519_intermark.pub
    ```
 
-4. **Create a Content Repository on GitHub**:
+4. **Create a Content Repository on GitHub using the template**:
 
-   - Go to GitHub and create a new repository for your content.
+   - Create a new Github repository for your content using [this template](https://github.com/Data-Corruption/Intermark-Content).
 
 5. **Add the Deploy Key to the Repository**:
 
@@ -73,19 +73,12 @@ Ensure you have the following installed:
    - Navigate to **Settings** > **Actions** > **General**.
    - Under **Workflow permissions**, select **Read and write permissions**.
 
-7. **Add Workflow to Content Repository**:
-
-   - Copy the `.github` directory from the `content_template/` folder in this repository.
-   - Paste it in the root of your content repository.
-
-8. **Run the Workflow**:
-
-    - Push changes to trigger the workflow, or run it manually via the **Actions** tab on GitHub. The workflow adds an ID to the top of all `.md` files, which is used to track content and prevent dead links.
-
-9. **Update Application Configuration**:
+7. **Update Application Configuration**:
 
     - Copy the SSH link for the content repository (e.g., `git@github.com:username/content-repo.git`).
     - Update the configuration file generated earlier, setting **content_repo** > **url** to your link.
+
+Now when you push changes to the main branch of your content repo, the workflow adds an ID to the top of all `.md` files, which is used to track content and prevent dead links. It can also update your site's content automatically, more on that later.
 
 ## Running the Application
 

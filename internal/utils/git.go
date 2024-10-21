@@ -10,6 +10,17 @@ import (
 	"github.com/Data-Corruption/blog"
 )
 
+func GitInstalled() bool {
+	cmd := exec.Command("git", "--version")
+	if err := cmd.Run(); err != nil {
+		blog.Errorf("Git is not installed: %v", err)
+		return false
+	} else {
+		blog.Info("Git is installed")
+		return true
+	}
+}
+
 // GitFileDiff checks if the given file has changed since the given commit.
 // It returns true if the file has changed, false if not, and an error if any.
 // If commitHash is empty, it returns true.

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -33,14 +34,22 @@ type Server struct {
 	server         *http.Server // The http or https server
 	usingTLS       bool
 	port           string // e.g. ":80"
+	certPath       string
+	keyPath        string
 }
 
 func (s *Server) Start() {
-	// Init tls info
-	if filesExist, err := files.Exists(utils.Config.Server.TLSKeyPath, utils.Config.Server.TLSCertPath); (err == nil) && filesExist {
-		s.usingTLS = true
+	if utils.Config.Server.TLSCertPath != "" && utils.Config.Server.TLSKeyPath != "" {
+		s.certPath = filepath.Clean(utils.Config.Server.TLSCertPath)
+		s.keyPath = filepath.Clean(utils.Config.Server.TLSKeyPath)
+		if filesExist, err := files.Exists(s.keyPath, s.certPath); (err == nil) && filesExist {
+			s.usingTLS = true
+		} else {
+			blog.Warnf("TLS files '%s', and '%s' not found, using HTTP", s.keyPath, s.certPath)
+			s.usingTLS = false
+		}
 	} else {
-		blog.Warnf("TLS files '%s', and '%s' not found, using HTTP", utils.Config.Server.TLSKeyPath, utils.Config.Server.TLSCertPath)
+		blog.Warn("TLS files not configured, using HTTP")
 		s.usingTLS = false
 	}
 
@@ -132,7 +141,7 @@ func (s *Server) Start() {
 
 		var err error = nil
 		if s.usingTLS {
-			err = s.server.ListenAndServeTLS(utils.Config.Server.TLSCertPath, utils.Config.Server.TLSKeyPath)
+			err = s.server.ListenAndServeTLS(s.certPath, s.keyPath)
 		} else {
 			err = s.server.ListenAndServe()
 		}

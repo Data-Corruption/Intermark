@@ -23,15 +23,14 @@ import (
 
 // ==== Variables =============================================================
 
-const (
-	DB_PATH           = "./data/data.db"
-	CONTENT_REPO_PATH = "./data/content"
-	CONTENT_HTML_PATH = "./data/html"
-	MISSING_FILE      = "MISSING_FILE"
-)
+const MISSING_FILE = "MISSING_FILE"
 
 var (
 	DB *gorm.DB = nil
+	// paths
+	DB_PATH           = filepath.Join("data", "data.db")
+	CONTENT_REPO_PATH = filepath.Join("data", "content")
+	CONTENT_HTML_PATH = filepath.Join("data", "html")
 	// Value type is Layout
 	layoutCache   = atomic.Value{}
 	UpdateMutex   = sync.Mutex{}
@@ -399,9 +398,9 @@ func RunTailwind(sandboxOnly bool) error {
 	}
 
 	// run the tailwindcss CLI
-	tailInput := "./data/css/input.css"
-	tailOutput := "./data/css/output.css"
-	tailConfigPath := "./configs/tailwind.config.js"
+	tailInput := filepath.Join("data", "css", "input.css")
+	tailOutput := filepath.Join("data", "css", "output.css")
+	tailConfigPath := filepath.Join("configs", "tailwind.config.js")
 	cmd := exec.Command("npx", "tailwindcss", "--config", tailConfigPath, "-i", tailInput, "-o", tailOutput, "--minify")
 	if utils.DebugMode {
 		cmd.Stdout = os.Stdout
@@ -572,8 +571,16 @@ func updateAssets(commit string) error {
 	AssetsMutex.Lock()
 	defer AssetsMutex.Unlock()
 
+	contentAssetDir := filepath.Join(CONTENT_REPO_PATH, utils.Config.ContentRepo.AssetsDir)
+	if exists, err := files.Exists(contentAssetDir); err != nil {
+		return err
+	} else if !exists {
+		blog.Warnf("Content asset directory not found: %s", contentAssetDir)
+		return nil
+	}
+
 	// ensure the data/assets directory exists
-	if err := files.EnsureDirs(filepath.Join("./data", "assets")); err != nil {
+	if err := files.EnsureDirs(filepath.Join("data", "assets")); err != nil {
 		return err
 	}
 
@@ -585,7 +592,7 @@ func updateAssets(commit string) error {
 	// get all asset paths in the content repo
 	var err error
 	var contentRepoAssetPaths []string
-	if contentRepoAssetPaths, err = files.ListAllFiles(filepath.Join(CONTENT_REPO_PATH, utils.Config.ContentRepo.AssetsDir)); err != nil {
+	if contentRepoAssetPaths, err = files.ListAllFiles(contentAssetDir); err != nil {
 		return err
 	}
 	for i, path := range contentRepoAssetPaths {
@@ -599,11 +606,11 @@ func updateAssets(commit string) error {
 	// remove assets from AssetModel slice and data/assets/ that no longer in the content repo
 	for i := len(assets) - 1; i >= 0; i-- {
 		if !utils.Contains(assets[i].ID, contentRepoAssetPaths) {
-			target := filepath.Join("./data", "assets", assets[i].ID)
+			target := filepath.Join("data", "assets", assets[i].ID)
 			if exists, err := files.Exists(target); err != nil {
 				return err
 			} else if exists {
-				if err = os.Remove(filepath.Join("./data", "assets", assets[i].ID)); err != nil {
+				if err = os.Remove(filepath.Join("data", "assets", assets[i].ID)); err != nil {
 					blog.Errorf("Error removing asset: %v", err)
 				}
 			}
@@ -633,7 +640,7 @@ func updateAssets(commit string) error {
 			return err
 		}
 		var exists bool
-		dst := filepath.Join("./data", "assets", assets[i].ID)
+		dst := filepath.Join("data", "assets", assets[i].ID)
 		if exists, err = files.Exists(dst); err != nil {
 			return err
 		}

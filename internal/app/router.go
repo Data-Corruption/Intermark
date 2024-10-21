@@ -6,6 +6,7 @@ import (
 	"intermark/internal/utils"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -15,7 +16,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-var Templates *template.Template
+var (
+	Templates    *template.Template
+	templateGlob = filepath.Join("data", "templates", "*.html")
+)
 
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +35,7 @@ func cacheControlMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if (utils.Config.Server.CacheMaxAge <= 0) || (strings.HasSuffix(r.URL.Path, ".css")) {
 			// If max-age is 0 or negative, disable caching
-			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0")
+			w.Header().Set("Cache-Control", "no-cache, must-revalidate, proxy-revalidate")
 		} else {
 			// Set Cache-Control header with the specified max-age
 			cacheControl := fmt.Sprintf("public, max-age=%d", utils.Config.Server.CacheMaxAge)
@@ -47,7 +51,7 @@ func NewRouter(usingTLS *bool) *chi.Mux {
 
 	// load the templates
 	var err error
-	if Templates, err = template.ParseGlob("data/templates/*.html"); err != nil {
+	if Templates, err = template.ParseGlob(templateGlob); err != nil {
 		blog.Fatalf(1, time.Second*3, "Error parsing templates: %s", err)
 	}
 
@@ -63,12 +67,12 @@ func NewRouter(usingTLS *bool) *chi.Mux {
 		r.Get(fmt.Sprintf("/%s/*", utils.Config.ContentRepo.AssetsDir), func(w http.ResponseWriter, r *http.Request) {
 			database.AssetsMutex.RLock()
 			defer database.AssetsMutex.RUnlock()
-			http.ServeFile(w, r, "data/assets"+r.URL.Path)
+			http.ServeFile(w, r, filepath.Clean("data/assets"+r.URL.Path))
 		})
 		r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 			database.AssetsMutex.RLock()
 			defer database.AssetsMutex.RUnlock()
-			http.ServeFile(w, r, fmt.Sprintf("data/assets/%s/logo.svg", utils.Config.ContentRepo.AssetsDir))
+			http.ServeFile(w, r, filepath.Clean(fmt.Sprintf("data/assets/%s/logo.svg", utils.Config.ContentRepo.AssetsDir)))
 		})
 	})
 

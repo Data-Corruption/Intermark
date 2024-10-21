@@ -7,7 +7,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"time"
+
+	"github.com/Data-Corruption/blog"
 )
 
 // Contains checks if a slice contains a given element.
@@ -75,4 +78,17 @@ func GetPublicIP() (string, error) {
 		return "", fmt.Errorf("error reading response: %w", err)
 	}
 	return string(ip), nil
+}
+
+func TailwindInstalled() bool {
+	cmd := exec.Command("npx", "tailwindcss", "--help")
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	if err := cmd.Run(); err != nil {
+		blog.Errorf("TailwindCSS is not installed: %v", err)
+		return false
+	} else {
+		blog.Info("TailwindCSS is installed")
+		return true
+	}
 }

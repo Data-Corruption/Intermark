@@ -1,16 +1,11 @@
-# Getting Started
+# Getting Started Windows
 
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Setup](#setup)
-- [Running the Application](#running-the-application)
-- [Managing Site Content](#managing-site-content)
-  - [Editing Site Layout](#editing-site-layout)
-  - [Automating Content Updates](#automating-content-updates)
+## Installation / Setup
+
+<details>
+  <summary>Linux</summary>
 
 ## Prerequisites
-
-*Note! - Currently I'm only supporting linux officially. If enough people request it, I'll add official support for windows.*
 
 Ensure you have the following installed:
 
@@ -35,6 +30,8 @@ Ensure you have the following installed:
    ```bash
    ssh-keygen -t ed25519 -C "comment for key, machine, email, whatever" -f ~/.ssh/id_ed25519_intermark
    ```
+
+   Don't set a passphrase, just hit enter.
 
 2. **Configure SSH for GitHub Access**:
 
@@ -87,6 +84,101 @@ Start the application:
 ```bash
 ./bin/intermark-linux-amd64
 ```
+
+</details>
+
+<details>
+  <summary>Windows</summary>
+  
+## Prerequisites
+
+Ensure you have the following installed:
+
+- **git**: [Download and Install Git, Ensure it's in your system PATH](https://git-scm.com/downloads/win)
+- **Node.js**: [Download and Install node/npm, Ensure it's in your system PATH](https://nodejs.org/en/download/package-manager)
+- **Go**: [Download and Install Go](https://go.dev/doc/install)
+
+## Installation
+
+Open powershell / cmd and run the following.
+
+1. **Clone The Repository**: `git clone https://github.com/Data-Corruption/intermark.git` or use the template.
+2. **Enter The Project Root**: `cd intermark`
+3. **Install Dependencies**: `npm install`
+4. **Build the Project**: `.\build.bat`
+5. **Generate Configuration File**: `.\bin\intermark-windows-amd64.exe`
+
+## Setup
+
+1. **Create a Deploy Key**:
+
+   Generate a new SSH key specifically for your Intermark site. In PowerShell, use the following command:
+
+   ```powershell
+   ssh-keygen -t ed25519 -C "comment for key, machine, email, whatever" -f C:\Users\YourUsername\.ssh\id_ed25519_intermark
+   ```
+
+   Don't set a passphrase, just hit enter.
+
+2. **Configure SSH for GitHub Access**:
+
+   To set up SSH for GitHub, you need to edit the SSH configuration file (config). In PowerShell, you can open the file with a text editor like Notepad:
+
+   ```powershell
+   notepad C:\Users\YourUsername\.ssh\config
+   ```
+
+   Add the following configuration to the file:
+
+   ```conf
+    Host github-intermark
+      HostName github.com
+      User git
+      IdentityFile ~/.ssh/id_ed25519_intermark
+   ```
+
+   This allows having multiple GitHub SSH keys without conflicts.
+
+   If you don't want to use 'github-intermark' you can change it but you'll also need to update the config you'll see later.
+
+3. **Retrieve the Public Key**:
+
+   Copy your public key for later use by running:
+
+   ```powershell
+   cat C:\Users\YourUsername\.ssh\id_ed25519_intermark.pub
+   ```
+
+4. **Create a Content Repository on GitHub using the template**:
+
+   - Create a new Github repository for your content using [this template](https://github.com/Data-Corruption/Intermark-Content).
+
+5. **Add the Deploy Key to the Repository**:
+
+    - In your content repository, go to **Settings** > **Deploy keys**.
+    - Click **Add deploy key**, give it a title, and paste the public key from earlier.
+
+6. **Enable GitHub Actions Permissions**:
+
+   - Navigate to **Settings** > **Actions** > **General**.
+   - Under **Workflow permissions**, select **Read and write permissions**.
+
+7. **Update Application Configuration**:
+
+    - Copy the SSH link for the content repository (e.g., `git@github.com:username/content-repo.git`).
+    - Update the configuration file generated earlier, setting **content_repo** > **url** to your link.
+
+Now when you push changes to the main branch of your content repo, the workflow adds an ID to the top of all `.md` files, which is used to track content and prevent dead links. It can also update your site's content automatically, more on that later.
+
+## Running the Application
+
+Start the application:
+
+```shell
+.\bin\intermark-windows-amd64.exe
+```
+  
+</details>
 
 ## Managing Site Content
 

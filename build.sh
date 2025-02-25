@@ -35,3 +35,4 @@ build() {
 
 # For a list of supported GOOS and GOARCH values, see https://golang.org/doc/install/source#environment
 build linux amd64
+build windows amd64

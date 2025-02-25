@@ -14,33 +14,38 @@ When editing the text for a footer item, any occurrences of "/year" will be repl
 
 ## Adding Fonts
 
-1. Add the font to your content repo's asset directory `./assets/`
-2. Edit `./configs/tailwindcss.config.js` in this repo, add the font name to fontFamily.
-
-    ```javascript
-    fontFamily: {
-      ExampleFont: ["ExampleFont"],
-    },
-    ```
-
-3. Edit `./data/css/input.css` in this repo, add the font face.
+1. Add the font to this repo's css directory `./data/css/`
+2. Edit `./data/css/app.css`, for example:
 
     ```css
+    @import "tailwindcss";
+    @plugin "@tailwindcss/typography";
+    @plugin "daisyui" {
+      themes: light, dark --default;
+    }
+
+    /*Custom Font Example*/
+
     @layer base {
       @font-face {
-        font-family: 'ExampleFont';
+        font-family: 'CustomFont';
         font-style: normal;
         font-weight: 400;
-        src: url('/assets/ExampleFont.ttf') format('truetype');
+        src: url('./ProggyVector.ttf') format('truetype');
+      }
+    }
+
+    @layer components {
+      .font-custom {
+        font-family: 'CustomFont', sans-serif;
       }
     }
     ```
 
-    If you changed your content repo's asset dir you'll need to change `/assets` in the url to whatever yours is.
-4. Use it in your html.
+3. Use it in your html.
 
     ```html
-    <span class="font-ExampleFont">Hello World</span>
+    <span class="font-custom">Hello World</span>
     ```
 
 ## Nested Markdown

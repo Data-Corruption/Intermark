@@ -12,3 +12,5 @@ data/data.db
 data/html/
 
 config.json
+
+data/css/out.css

@@ -398,10 +398,9 @@ func RunTailwind(sandboxOnly bool) error {
 	}
 
 	// run the tailwindcss CLI
-	tailInput := filepath.Join("data", "css", "input.css")
-	tailOutput := filepath.Join("data", "css", "output.css")
-	tailConfigPath := filepath.Join("configs", "tailwind.config.js")
-	cmd := exec.Command("npx", "tailwindcss", "--config", tailConfigPath, "-i", tailInput, "-o", tailOutput, "--minify")
+	tailInput := filepath.Join("data", "css", "app.css")
+	tailOutput := filepath.Join("data", "css", "out.css")
+	cmd := exec.Command("npx", "@tailwindcss/cli", "-i", tailInput, "-o", tailOutput, "--minify")
 	if utils.DebugMode {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

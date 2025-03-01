@@ -3,11 +3,9 @@
   "version": "1.0.0",
   "description": "dummy project for tailwind/daisyui",
   "devDependencies": {
+    "tailwindcss": "^4.0.9",
+    "@tailwindcss/cli": "^4.0.9",
     "@tailwindcss/typography": "^0.5.16",
-    "daisyui": "^5.0.0-beta.7",
-    "tailwindcss": "^4.0.9"
-  },
-  "dependencies": {
-    "@tailwindcss/cli": "^4.0.9"
+    "daisyui": "^5.0.0-beta.7"
   }
 }

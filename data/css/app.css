@@ -1,4 +1,9 @@
 @import "tailwindcss";
+
+@source "../assets/assets";
+@source "../html";
+@source "../templates";
+
 @plugin "@tailwindcss/typography";
 @plugin "daisyui" {
   themes: light, dark --default;

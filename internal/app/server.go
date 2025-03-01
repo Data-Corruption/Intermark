@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -120,70 +119,33 @@ func (s *Server) Start() {
 
 	waitForServer := true
 
-	// Attempt to start the server, if port is in use, prompt for a new port and try again
-	for {
-		waitForServer = true
+	var ip string
+	ip, err = utils.GetPublicIP()
+	if err != nil {
+		blog.Errorf("issue getting public IP: %v", err)
+		fmt.Println("issue getting public IP:", err)
+		waitForServer = false
+	}
 
-		var ip string
-		ip, err = utils.GetPublicIP()
-		if err != nil {
-			blog.Errorf("Error getting public IP: %v", err)
-		}
+	lan := fmt.Sprintf("http://localhost%s", s.port)
+	wan := fmt.Sprintf("http://%s%s", ip, s.port)
 
-		protocol := utils.Ternary(s.usingTLS, "https://", "http://")
-		lan := fmt.Sprintf("%slocalhost%s", protocol, s.port)
-		wan := fmt.Sprintf("%s%s%s", protocol, ip, s.port)
+	log.Print("Starting server...")
+	log.Printf("LAN: %s %s/edit", lan, lan)
+	log.Printf("WAN: %s %s/edit", wan, wan)
+	log.Printf("Press Ctrl+C to stop the server...")
 
-		log.Print("Starting server...")
-		log.Printf("LAN: %s %s/edit", lan, lan)
-		log.Printf("WAN: %s %s/edit", wan, wan)
-		log.Printf("Press Ctrl+C to stop the server...")
+	if s.usingTLS {
+		err = s.server.ListenAndServeTLS(s.certPath, s.keyPath)
+	} else {
+		err = s.server.ListenAndServe()
+	}
 
-		var err error = nil
-		if s.usingTLS {
-			err = s.server.ListenAndServeTLS(s.certPath, s.keyPath)
-		} else {
-			err = s.server.ListenAndServe()
-		}
-
-		if err != nil {
-			// Standard exit
-			if err == http.ErrServerClosed {
-				break
-			}
-
-			// if error is not a network error, print and exit
-			opErr, ok := err.(*net.OpError)
-			if !(ok && opErr.Op == "listen") {
-				blog.Errorf("Error starting server: %v", err)
-				fmt.Println("Error starting server:", err)
-				waitForServer = false
-				break
-			}
-
-			// if error is not an address in use error, print and exit
-			sysErr, ok := opErr.Err.(*os.SyscallError)
-			if !(ok && sysErr.Err == syscall.EADDRINUSE) {
-				blog.Errorf("Error starting server: %v", err)
-				fmt.Println("Error starting server:", err)
-				waitForServer = false
-				break
-			}
-
-			// Get a new port
-			newPort := utils.PromptInt("Port in use. Enter a new port or 0 to abort: ")
-			if newPort == 0 {
-				waitForServer = false
-				break
-			} else {
-				// Update the port and try again
-				s.port = fmt.Sprintf(":%d", newPort)
-				s.server.Addr = s.port
-				utils.Config.Server.Port = newPort
-				utils.Config.Save()
-			}
-		} else {
-			break
+	if err != nil {
+		if err != http.ErrServerClosed {
+			fmt.Println("server error:", err)
+			blog.Errorf("server error: %v", err)
+			waitForServer = false
 		}
 	}
 
